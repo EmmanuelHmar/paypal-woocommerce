@@ -183,11 +183,11 @@ class AngellEYE_Admin_Order_Payment_Process {
                 }
                 break;
             case 'paypal_credit_card_rest': {
-                    $this->angelleye_paypal_credit_card_rest_reference_transaction($order);
+                    //$this->angelleye_paypal_credit_card_rest_reference_transaction($order);
                 }
                 break;
             case 'paypal_advanced': {
-                    $this->angelleye_paypal_advanced_reference_transaction($order);
+                    //$this->angelleye_paypal_advanced_reference_transaction($order);
                 }
                 break;
             case 'paypal_pro': {
@@ -203,6 +203,39 @@ class AngellEYE_Admin_Order_Payment_Process {
         remove_action('woocommerce_process_shop_order_meta', 'WC_Meta_Box_Order_Data::save', 40, 2);
     }
 
+    public function angelleye_braintree_reference_transaction($order) {
+        $token_id = $this->get_usable_reference_transaction($order);
+        if (!empty($token_id)) {
+            $this->angelleye_load_payment_method_setting($order);
+            if (class_exists('WC_Gateway_Braintree_AngellEYE')) {
+                $braintree_payment = new WC_Gateway_Braintree_AngellEYE();
+                $braintree_payment->process_subscription_payment($order, $amount = '', $token_id);
+            }
+        }
+    }
+    
+    public function angelleye_paypal_advanced_reference_transaction($order) {
+        $token_id = $this->get_usable_reference_transaction($order);
+        if (!empty($token_id)) {
+            $this->angelleye_load_payment_method_setting($order);
+            if (class_exists('WC_Gateway_PayPal_Advanced_AngellEYE')) {
+                $paypal_advanced = new WC_Gateway_PayPal_Advanced_AngellEYE();
+                //$paypal_advanced->process_subscription_payment($order, $amount = '', $token_id);
+            }
+        }
+    }
+    
+    public function angelleye_paypal_credit_card_rest_reference_transaction($order) {
+        $token_id = $this->get_usable_reference_transaction($order);
+        if (!empty($token_id)) {
+            $this->angelleye_load_payment_method_setting($order);
+            if (class_exists('WC_Gateway_PayPal_Credit_Card_Rest_AngellEYE')) {
+                $paypal_rest = new WC_Gateway_PayPal_Credit_Card_Rest_AngellEYE();
+                //$paypal_rest->process_subscription_payment($order, $amount = '', $token_id);
+            }
+        }
+    }
+    
     public function angelleye_paypal_pro_payflow_reference_transaction($order) {
         $token_id = $this->get_usable_reference_transaction($order);
         if (!empty($token_id)) {
