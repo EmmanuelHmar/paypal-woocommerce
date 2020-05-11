@@ -673,15 +673,11 @@ of the user authorized to process transactions. Otherwise, leave this field blan
     function process_payment($order_id) {
         $order = wc_get_order($order_id);
         $card = $this->get_posted_card();
-
+        do_action('angelleye_paypal_for_woocommerce_product_level_payment_action', $this->gateway, $this, $order_id);
         if (!empty($_POST['wc-paypal_pro_payflow-payment-token']) && $_POST['wc-paypal_pro_payflow-payment-token'] != 'new') {
             $this->enable_3dsecure = false;
         }
-
-        $this->angelleye_load_paypal_payflow_class($this->gateway, $this, $order_id);
-        
         if ($this->enable_3dsecure) {
-
             if ($this->threedsecure_type == 'cardinalcommerce') {
                 if (!class_exists('CentinelClient'))
                     include_once('lib/CentinelClient.php');
@@ -1400,6 +1396,7 @@ of the user authorized to process transactions. Otherwise, leave this field blan
                     }
                 } elseif ($this->payment_action == "Authorization") {
                     if (isset($PayPalResult['PPREF']) && !empty($PayPalResult['PPREF'])) {
+	                    add_post_meta($order_id, 'PPREF', $PayPalResult['PPREF']);
                         $order->add_order_note(sprintf(__('PayPal Pro Payflow payment completed (PNREF: %s) (PPREF: %s)', 'paypal-for-woocommerce'), $PayPalResult['PNREF'], $PayPalResult['PPREF']));
                     } else {
                         $order->add_order_note(sprintf(__('PayPal Pro Payflow payment completed (PNREF: %s)', 'paypal-for-woocommerce'), $PayPalResult['PNREF']));
@@ -1430,6 +1427,7 @@ of the user authorized to process transactions. Otherwise, leave this field blan
                     $angelleye_utility->angelleye_get_transactionDetails($PayPalResult['PNREF']);
                 } else {
                     if (isset($PayPalResult['PPREF']) && !empty($PayPalResult['PPREF'])) {
+	                    add_post_meta($order_id, 'PPREF', $PayPalResult['PPREF']);
                         $order->add_order_note(sprintf(__('PayPal Pro Payflow payment completed (PNREF: %s) (PPREF: %s)', 'paypal-for-woocommerce'), $PayPalResult['PNREF'], $PayPalResult['PPREF']));
                     } else {
                         $order->add_order_note(sprintf(__('PayPal Pro Payflow payment completed (PNREF: %s)', 'paypal-for-woocommerce'), $PayPalResult['PNREF']));

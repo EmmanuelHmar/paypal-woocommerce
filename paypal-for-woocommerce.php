@@ -4,7 +4,7 @@
  * Plugin Name:       PayPal for WooCommerce
  * Plugin URI:        http://www.angelleye.com/product/paypal-for-woocommerce-plugin/
  * Description:       Easily enable PayPal Express Checkout, PayPal Pro, PayPal Advanced, PayPal REST, and PayPal Braintree.  Each option is available separately so you can enable them individually.
- * Version:           2.2.2
+ * Version:           2.2.3
  * Author:            Angell EYE
  * Author URI:        http://www.angelleye.com/
  * License:           GNU General Public License v3.0
@@ -39,7 +39,7 @@ if (!defined('PAYPAL_FOR_WOOCOMMERCE_ASSET_URL')) {
     define('PAYPAL_FOR_WOOCOMMERCE_ASSET_URL', plugin_dir_url(__FILE__));
 }
 if (!defined('VERSION_PFW')) {
-    define('VERSION_PFW', '2.2.2');
+    define('VERSION_PFW', '2.2.3');
 }
 if ( ! defined( 'PAYPAL_FOR_WOOCOMMERCE_PLUGIN_FILE' ) ) {
     define( 'PAYPAL_FOR_WOOCOMMERCE_PLUGIN_FILE', __FILE__ );
@@ -149,7 +149,7 @@ if(!class_exists('AngellEYE_Gateway_Paypal')){
             add_action('woocommerce_product_data_tabs', array( $this, 'angelleye_paypal_for_woo_woocommerce_product_data_tabs' ), 99, 1);
             add_action('woocommerce_product_data_panels', array( $this, 'angelleye_paypal_for_woo_product_date_panels' ));
             add_action('woocommerce_process_product_meta', array( $this, 'angelleye_paypal_for_woo_product_process_product_meta' ));
-            add_action('angelleye_paypal_for_woocommerce_multi_account_api_paypal_payflow', array( $this, 'angelleye_paypal_for_woo_product_level_payment_action' ), 10, 3);
+            add_action('angelleye_paypal_for_woocommerce_product_level_payment_action', array( $this, 'angelleye_paypal_for_woo_product_level_payment_action' ), 10, 3);
             add_action( 'wp_head', array( $this, 'paypal_for_woo_head_mark' ), 1 );     
             add_action( 'admin_footer', array($this, 'angelleye_add_deactivation_form'));
             add_action( 'wp_ajax_angelleye_send_deactivation', array($this, 'angelleye_handle_plugin_deactivation_request'));
@@ -1133,11 +1133,16 @@ if(!class_exists('AngellEYE_Gateway_Paypal')){
         }
         
         public function angelleye_paypal_for_woo_woocommerce_product_data_tabs($product_data_tabs) {
-            $product_data_tabs['angelleye_paypal_for_woo_payment_action'] = array(
-                'label' => __( 'Payment Action', 'paypal-for-woocommerce' ),
-                'target' => 'angelleye_paypal_for_woo_payment_action',
-            );
+            global $woocommerce;
+            $gateways = $woocommerce->payment_gateways->payment_gateways();
+            if( !empty($gateways) ) {
+                $product_data_tabs['angelleye_paypal_for_woo_payment_action'] = array(
+                    'label' => __( 'Payment Action', 'paypal-for-woocommerce' ),
+                    'target' => 'angelleye_paypal_for_woo_payment_action',
+                );
+            }
             return $product_data_tabs;
+            
         }
         
         public function angelleye_paypal_for_woo_product_date_panels() {
@@ -1151,7 +1156,7 @@ if(!class_exists('AngellEYE_Gateway_Paypal')){
                                 'label'       => __( 'Enable Payment Action', 'paypal-for-woocommerce' ),
                         )
                 );
-                
+               
                 woocommerce_wp_select(
                     array(
                             'id'          => 'woo_product_payment_action',
@@ -1225,7 +1230,16 @@ if(!class_exists('AngellEYE_Gateway_Paypal')){
                         }
                     }
                 }
-                if( !empty($payment_action) ) {
+                if( empty($payment_action) ) {
+                    return;
+                }
+                if( $gateway_setting->id === 'braintree' || $gateway_setting->id === 'paypal_express') {
+                    if( isset($payment_action['Authorization']) && !empty($payment_action['Authorization'])) {
+                        $gateway_setting->payment_action = 'Authorization';
+                    } elseif(isset($payment_action['Sale']) && !empty($payment_action['Sale'])) {
+                        $gateway_setting->payment_action = 'Sale';
+                    }
+                } elseif ($gateway_setting->id === 'paypal_pro_payflow' ) {
                     if( isset($payment_action['Authorization']) && !empty($payment_action['Authorization'])) {
                         $gateway_setting->payment_action = 'Authorization';
                         if($payment_action['Authorization'] == 'Full Authorization') {
